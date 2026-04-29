@@ -4,13 +4,57 @@
 #
 #    pip-compile --output-file=binder/requirements.txt pyproject.toml
 #
+attrs==26.1.0
+    # via
+    #   jsonschema
+    #   referencing
 et-xmlfile==2.0.0
     # via openpyxl
+fastjsonschema==2.21.2
+    # via nbformat
+jsonschema==4.26.0
+    # via nbformat
+jsonschema-specifications==2025.9.1
+    # via jsonschema
+jupyter-core==5.9.1
+    # via nbformat
+jupytext==1.19.1
+    # via transcript-tabulator (pyproject.toml)
 lxml==6.1.0
     # via python-docx
+markdown-it-py==4.0.0
+    # via
+    #   jupytext
+    #   mdit-py-plugins
+mdit-py-plugins==0.5.0
+    # via jupytext
+mdurl==0.1.2
+    # via markdown-it-py
+nbformat==5.10.4
+    # via jupytext
 openpyxl==3.1.5
-    # via Transcript Tabulator (pyproject.toml)
+    # via transcript-tabulator (pyproject.toml)
+packaging==26.2
+    # via jupytext
+platformdirs==4.9.6
+    # via jupyter-core
 python-docx==1.2.0
-    # via Transcript Tabulator (pyproject.toml)
+    # via transcript-tabulator (pyproject.toml)
+pyyaml==6.0.3
+    # via jupytext
+referencing==0.37.0
+    # via
+    #   jsonschema
+    #   jsonschema-specifications
+rpds-py==0.30.0
+    # via
+    #   jsonschema
+    #   referencing
+traitlets==5.14.3
+    # via
+    #   jupyter-core
+    #   nbformat
 typing-extensions==4.15.0
-    # via python-docx
+    # via
+    #   python-docx
+    #   referencing
