@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools >= 77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "transcript-tabulator"
+description = "Turns transcripts in Word documents into a tidy spreadsheet for computational analysis."
+readme = "README.md"
+requires-python = ">=3.10.0"
+license = "AGPL-3.0-or-later"
+license-files = ["LICENSE.txt"]
+authors = [
+  {name = "Sam Hames"},
+]
+classifiers=[
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+]
+dependencies = [
+  "python-docx",
+  "openpyxl",
+]
+version="0.0.1dev1"
+
+
+[project.optional-dependencies]
+dev = ["pip-tools", "jupytext", "black"]
+
+[project.urls]
+Repository = "https://github.com/AustralianTextAnalyticsPlatform/transcript-tabulator"
+Homepage = "https://github.com/AustralianTextAnalyticsPlatform/transcript-tabulator"
+
+
+[tool.setuptools]
+packages = ["transcript_tabulator"]
+
+
+# This sets up pairing between the python script version and the jupyter
+# notebook version for easier version control.
+[tool.jupytext.formats]
+"notebooks/" = "ipynb"
+"transcript_tabulator/" = "py:percent"
