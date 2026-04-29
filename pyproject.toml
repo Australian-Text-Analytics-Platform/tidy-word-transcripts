@@ -33,10 +33,3 @@ Homepage = "https://github.com/AustralianTextAnalyticsPlatform/transcript-tabula
 
 [tool.setuptools]
 packages = ["transcript_tabulator"]
-
-
-# This sets up pairing between the python script version and the jupyter
-# notebook version for easier version control.
-[tool.jupytext.formats]
-"notebooks/" = "ipynb"
-"transcript_tabulator/" = "py:percent"
