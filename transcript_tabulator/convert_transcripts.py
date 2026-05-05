@@ -15,25 +15,101 @@
 # ---
 
 # %% [markdown]
-# # Transcript Tabulator
+# # The Transcript Compiler
 #
-# ## To support computational analysis of qualitative interview transcripts.
+# This notebook will assist you in creating a computationally consistent view of
+# transcripts of spoken materials that are recorded in Word documents (.docx). It will
+# help you do things like:
 #
+# 1. Extract speaker codes.
+# 2. Extract transcribed text.
+# 3. Add further information about who's speaking
+# 4. Add further information about the context of your transcripts (eg. if they're from
+#    different parts of a multi phase study).
+# 4. Identify and correct inconsistencies in formatting and speaker information.
+# 6. Identify possible quality issues, such as missing speaker codes.
+# 5. Connect your transcripts to their associated audio recordings.
+# 6. Segment your transcripts into different components with labels - for example to
+#    break up a semi-structured interview into topical segments for comparison.
+#
+# Apart from providing some structure for entering consistent information in and about
+# your transcripts, this is primarily intended to help you get the most out of the
+# transcripts you already have by allowing you to use them with computational tools for
+# searching and filtering.
+#
+# Note that this tool assumes you already have transcripts in Word format (.docx) - if
+# you are just starting out transcribing audio you may want to consider other tools and
+# formats for transcribing that solve many of the issues we attempt to address here. We
+# also assume that these Word transcripts you have will continue to be the version of
+# record for your transcripts: the spreadsheet we compile here does not replace these
+# but instead complements them.
+#
+# TODO: Working with Word files or PDF's that aren't transcripts - checkout our document
+# text extractor.
+# TODO: link to guidance on transcribing speech.
 
 
 # %% [markdown]
-# # Getting Started
+# # Word Transcript Conventions and How We Compile Them
+#
+# This notebook relies on a common set of conventions that we have observed in many Word
+# based transcripts: because Word is a document preparation tool and not a data tool
+# you may need to make adjustments to your Word files or change the configuration of
+# this notebook. We aim to have clear and transparent failure modes, so even if things
+# aren't quite right it can still be useful.
+#
+# We principally rely on two common conventions:
+#
+# 1. A new paragraph in Word is a new turn in the transcript.
+# 2. The speaker code is separated from the text of what they said by colon-tab `:  `.
 #
 # Download the <a href="../example_transcript/transcript_format_example.docx"
 # download="">annotated example transcript</a> to understand the expected format.
 #
+# What doesn't work:
+#
+# - If line-breaks are manually inserted to wrap text.
+# - If you include non transcript material in your transcripts such as headers.
+# - If your speaker codes aren't consistently marked with the same punctuation.
+# - Information only present in styles like *bold* or _italics_ are ignored.
+# - If your transcript lines are in tables.
+
+# %% [markdown]
+# # Recommended Workflow
+#
+# TODO: Make a diagram for this not just another list.
+#
+# 1. Start with whatever Word documents you have and upload them.
+# 2. Download the output spreadsheet and examine the different sheets.
+# 3. If major consistency problems are evident, identify and fix worst parts.
+# 4. When major problems with transcripts are fixed, move onto entering metadata.
+
 
 # %% [markdown]
 #
-# # Step 1 - Upload your Transcripts
+# # Upload your Transcripts
 #
-# Upload your transcripts to the uploaded_transcripts folder - you can drag and drop.
+# Put your transcripts in a zip file and upload using the button below.
 #
+# Or: upload a set of docx files and an associated spreadsheet.
+#
+# If you upload a new zip file, it will completely replace all existing files.
+#
+# If you're running this for the first time with these transcripts, don't worry about
+# this.
+#
+# Optionally, include the spreadsheet created from an earlier run of the tool in the zip
+# file. The contents of that spreadsheet will be merged into the output of rerunning
+# this tool so you don't have to enter any information again.
+#
+
+# %%
+import ipywidgets
+
+uploaded_via_jupyter = False
+
+uploader = ipywidgets.FileUpload(accept=".docx", multiple=True)
+display(uploader)
 
 
 # %% [markdown]
@@ -170,53 +246,7 @@ extract_speaker_code_info(transcript_rows)
 for filename, para_no, speaker_code, text, segment_no in transcript_rows:
     pass
 
-
-# %%
-# Write this all out to the XLSX file.
-
-
-# %% [markdown]
-# # Working with conversation data
-
-
-# %% [markdown]
-# # Requirements and assumptions
-
-
-# %%
-# Create a folder to hold the conversations
-from pathlib import Path
-
-conversations_path = Path("conversations")
-conversations_path.mkdir(exist_ok=True)
-
-# %% [markdown]
-# # Upload your transcripts
-#
-# You can either click the button below, or upload your files directly in the
-# conversations folder from the lefthand panel.
-
-# %%
-import ipywidgets
-
-uploaded_via_jupyter = False
-
-uploader = ipywidgets.FileUpload(accept=".docx", multiple=True)
-display(uploader)
-
-
-# %% [markdown]
-# Process the uploaded documents.
-#
-# Uploaded files are saved in the conversations folder. All .docx files in that folder
-# will be included in the processing below.
-
-# %%
-from pathlib import Path
-
-for uploaded_file in uploader.value:
-    with open(conversations_path / uploaded_file.name, "wb") as f:
-        f.write(uploaded_file.content)
+# %% Write the output file
 
 
 # %% [markdown]
@@ -287,22 +317,3 @@ for transcript_filepath in glob.glob(str(conversations_path / "**.docx")):
             )
 
 convo_db.execute("commit")
-
-# %% [markdown]
-#
-# The previous step created a little database holding the extracted turns from all
-# uploaded files. Now we're going to index this dataset in a way that is aware of the
-# within and across-turn structure of conversations.
-
-
-# %% [markdown]
-#
-# First lets define two functions for breaking down turns into word-like units
-# (tokenisation). We'll create two tokenisers - the first one normalises case by
-# lowercasing all of the text, then finds and splits the turn up at characters
-# indicating word boundaries('\b'), or whitespace characters like space, newlines, and
-# tabs.
-#
-# The second, display_tokenise, breaks on the same places, but does not lowercase, or
-# remove spaces, so we can recreate and highlight search result matches/concordances
-# of search terms.
