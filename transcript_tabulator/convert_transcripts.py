@@ -1,7 +1,7 @@
 # ---
 # jupyter:
 #   jupytext:
-#     cell_metadata_filter: -all
+#     cell_metadata_filter: title,-all
 #     formats: py:percent,ipynb
 #     text_representation:
 #       extension: .py
@@ -44,9 +44,14 @@
 # record for your transcripts: the spreadsheet we compile here does not replace these
 # but instead complements them.
 #
-# TODO: Working with Word files or PDF's that aren't transcripts - checkout our document
-# text extractor.
+# TODO: Working with Word files or PDF's that aren't transcripts - checkout our [document
+# text extractor tool]().
+#
 # TODO: link to guidance on transcribing speech.
+#
+# TODO: this is way too text heavy and needs some explanation. Maybe I should start with
+# the quick and dirty example first and see what happens? Or link to the explanation at
+# the end?
 
 
 # %% [markdown]
@@ -89,27 +94,16 @@
 #
 # # Upload your Transcripts
 #
-# Put your transcripts in a zip file and upload using the button below.
+# Upload your Word documents (.docx format) with the button on the left.
 #
-# Or: upload a set of docx files and an associated spreadsheet.
-#
-# If you upload a new zip file, it will completely replace all existing files.
-#
-# If you're running this for the first time with these transcripts, don't worry about
-# this.
-#
-# Optionally, include the spreadsheet created from an earlier run of the tool in the zip
-# file. The contents of that spreadsheet will be merged into the output of rerunning
-# this tool so you don't have to enter any information again.
+# *Optionally*, upload the spreadsheet you created from an earlier run of the tool with the button on the right.
+# The contents of that spreadsheet will be merged into the output of rerunning this tool so you don't have to enter any information again.
 #
 
 # %%
-import ipywidgets
+from uploader import upload_widget
 
-uploaded_via_jupyter = False
-
-uploader = ipywidgets.FileUpload(accept=".docx", multiple=True)
-display(uploader)
+display(upload_widget())
 
 
 # %% [markdown]
