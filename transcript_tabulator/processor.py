@@ -108,8 +108,8 @@ class RowWithExtraFields:
 class Segment(RowWithExtraFields):
     source_file: str
     segment_no: int
-    name: typing.Optional[str] = ""
     turn_count: typing.Optional[int] = 0
+    segment_name: typing.Optional[str] = ""
     extra_fields: typing.Optional[dict[str, typing.Any]] = dc.field(
         default_factory=dict
     )
@@ -178,7 +178,7 @@ class TidyTranscripts(RowWithExtraFields):
 
                 # Extract keys for segments and speaker_codes as we go.
                 speaker_code_counts[(turn.source_file, turn.speaker_code)] += 1
-                segment_counts[(turn.source_file, turn.speaker_code)] += 1
+                segment_counts[(turn.source_file, turn.segment_no)] += 1
                 transcript_turn_counts[turn.source_file] += 1
 
         # Turn them into dataclasses for final processing
@@ -256,6 +256,42 @@ class TidyTranscripts(RowWithExtraFields):
             split_speaker_on=split_speaker_on,
         )
 
+    def extract_from_spreadsheet(self):
+
+        if self.spreadsheet_bytes:
+            wb = load_workbook(filename=BytesIO(self.spreadsheet_bytes))
+        else:
+            wb = Workbook()
+
+        speaker_codes = {}
+        segments = {}
+        transcript_stats = {}
+
+        sheet_map = [
+            # This is sheetname, primary key columns, the mapped datatype, and the place
+            # to put results.
+            (
+                "speaker_code",
+                ("source_file", "speaker_code"),
+                SpeakerCode,
+                speaker_codes,
+            ),
+            ("segment", ("source_file", "segment_no"), Segment, segments),
+            ("transcript_file", ("source_file",), Transcript, transcript_stats),
+        ]
+
+        for sheetname, key_columns, sheet_type, data_loc in sheet_map:
+
+            if sheetname in wb.sheetnames:
+
+                ws = wb[sheetname]
+                rows = ws.iter_rows()
+
+                header_row = next(rows)
+                print(header_row)
+
+        return segments, speaker_codes, transcript_stats
+
     def as_xlsx(self):
         """
         Return a new xlsx file with all of the data merged together.
@@ -284,7 +320,7 @@ class TidyTranscripts(RowWithExtraFields):
         for turn in self.turns:
             turn_sheet.append(dc.astuple(turn))
 
-        speaker_sheet = wb.create_sheet("speaker")
+        speaker_sheet = wb.create_sheet("speaker_code")
         speaker_sheet.append(self.speaker_codes[0].as_header_row())
 
         for speaker_code in self.speaker_codes:
@@ -296,7 +332,7 @@ class TidyTranscripts(RowWithExtraFields):
         for segment in self.segments:
             segment_sheet.append(segment.as_row())
 
-        transcript_sheet = wb.create_sheet("transcript")
+        transcript_sheet = wb.create_sheet("transcript_file")
         transcript_sheet.append(self.transcript_stats[0].as_header_row())
 
         for t_stat in self.transcript_stats:
@@ -308,8 +344,10 @@ class TidyTranscripts(RowWithExtraFields):
 if __name__ == "__main__":
 
     tidied = TidyTranscripts.from_filepaths(
-        ["../example_transcript/transcript_format_example.docx"],
+        ["../examples/transcript_format_example.docx"],
+        spreadsheet_path="../examples/output.xlsx",
     )
 
+    tidied.extract_from_spreadsheet()
     wb = tidied.as_xlsx()
     wb.save("output.xlsx")
