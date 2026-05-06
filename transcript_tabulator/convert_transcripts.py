@@ -92,7 +92,7 @@
 
 # %% [markdown]
 #
-# # Upload your Transcripts
+# # 1. Upload your Transcripts
 #
 # Upload your Word documents (.docx format) with the button on the left.
 #
@@ -103,82 +103,29 @@
 # %%
 from uploader import upload_widget
 
-display(upload_widget())
+layout, doc_widget, xl_widget = upload_widget()
+display(layout)
 
 
 # %% [markdown]
+# # 2. Process Uploaded Transcripts
 #
-# # Step 2 - Run This Cell
+# This next step will process your uploaded transcripts to extract:
 #
+# - each turn of transcription
+# - split the speaker code from the text of the transcript
+# - 
 #
 
 # %%
-import glob
-from pathlib import Path
+from processor import TidyTranscripts
 
-from docx import Document
+transcripts = TidyTranscripts.from_ipywidgets(doc_widget, xl_widget)
 
-# Find all the uploaded .docx files and process them one by one
+# %% [markdown]
+# # 3. Download and Review the Created File
 
-from docx import Document
-
-transcripts_folder = Path("uploaded_transcripts")
-
-transcript_rows = []
-
-# This looks for colon-tab (the \t is a tab character) as the speaker-text separator.
-# If you use a different convention you can try changing this.
-speaker_text_separator = ":\t"
-
-for transcript_filepath in glob.glob(str(transcripts_folder / "**.docx")):
-
-    filename = Path(transcript_filepath).relative_to(transcripts_folder)
-
-    print("Processing", filename)
-
-    with open(transcript_filepath, mode="rb") as transcript_file:
-
-        # Load the word document
-        doc = Document(transcript_file)
-
-        para_no = 1
-        segment_no = 1
-
-        # We're going to treat each paragraph in the file as a single speaker's turn.
-        # This is why headers need to be wrapped in a table or similar, otherwise we
-        # end up the header included as part of the transcript.
-        for paragraph in doc.paragraphs:
-
-            # The text of this paragraph
-            para_text = paragraph.text
-
-            # Handle blank lines.
-            # If they're at the start of the file just ignore them, otherwise use them
-            # as segment boundaries within the transcript.
-            if not para_text.strip():
-                if para_no == 1:
-                    continue
-
-                segment_no += 1
-                continue
-
-            # Identify speakers by looking for the first colon character then a tab.
-            # If colon-tab is not matched, no speaker will be assigned to this turn.
-            speaker_code, sep, text = para_text.partition(speaker_text_separator)
-
-            # If nothing in the line matches the speaker/text separator, keep the whole
-            # line, and don't record a speaker
-            if sep == "":
-                text = para_text
-                speaker_code = None
-
-            transcript_rows.append(
-                (str(filename), para_no, speaker_code, text, segment_no)
-            )
-
-            para_no += 1
-
-print(transcript_rows)
+# %%
 
 # %% [markdown]
 # # Finding and fixing issues
@@ -255,59 +202,3 @@ for filename, para_no, speaker_code, text, segment_no in transcript_rows:
 # match what you want, and re-run this cell.
 
 # %%
-# Start by setting up a small database to hold the processed information.
-
-import sqlite3
-
-convo_db_path = conversations_path / "conversations.db"
-
-convo_db = sqlite3.connect(convo_db_path, isolation_level=None)
-
-convo_db.executescript("""
-    DROP table if exists turn;
-    CREATE table turn (
-        turn_id integer primary key,
-        source_file,
-        turn_no,
-        speaker,
-        turn,
-        unique(source_file, turn_no)
-    )
-
-    """)
-
-# Then we'll identify and load conversation turns from each transcript.
-import glob
-
-from docx import Document
-
-convo_db.execute("begin")
-
-for transcript_filepath in glob.glob(str(conversations_path / "**.docx")):
-    filename = Path(transcript_filepath).relative_to(conversations_path)
-    print("Processing", transcript_filepath)
-
-    with open(transcript_filepath, "rb") as transcript_file:
-
-        # Load the word document
-        doc = Document(transcript_file)
-
-        # We're going to treat each paragraph in the word file as a turn
-        for turn_no, paragraph in enumerate(doc.paragraphs):
-            para_text = paragraph.text
-
-            # Identify speakers by looking for the colon character then a tab.
-            # If colon-tab is not matched, no speaker will be assigned to this turn.
-            speaker_split = para_text.split(":\t")
-
-            if len(speaker_split) == 2:
-                speaker, text = speaker_split
-            else:
-                speaker, text = None, para_text
-
-            convo_db.execute(
-                "INSERT into turn values (?, ?, ?, ?, ?)",
-                (None, transcript_filepath, turn_no, speaker, text),
-            )
-
-convo_db.execute("commit")

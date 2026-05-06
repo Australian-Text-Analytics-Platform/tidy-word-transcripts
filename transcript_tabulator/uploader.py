@@ -41,7 +41,7 @@ def upload_widget():
 
     layout = ipywidgets.VBox([ipywidgets.HBox([doc_uploader, xl_uploader]), out])
 
-    return layout
+    return layout, doc_uploader, xl_uploader
 
 
 # def handle_upload(change):
