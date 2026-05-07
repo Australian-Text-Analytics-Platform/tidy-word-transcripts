@@ -118,89 +118,17 @@ display(layout)
 #
 
 # %%
+from IPython.display import HTML
 from processor import TidyTranscripts
 
 transcripts = TidyTranscripts.from_ipywidgets(doc_widget, xl_widget)
-transcripts.as_xlsx()
+output = transcripts.as_xlsx()
+output.save('combined_transcripts.xlsx')
+
+display(HTML("<a href=combined_transcripts.xlsx>Download Combined Transcripts</a>"))
 
 
 # %% [markdown]
 # # 3. Download and Review the Created File
-
-# %%
-
-# %% [markdown]
-# # Finding and fixing issues
-#
-# 1. Identify and fix speaker code issues first.
-#   - One off mispellings: fix in the source file and re-upload that file.
-#   - Systematic inconsistencies: one transcript may have Interviewer, the other
-#   - may have interviewer (lowercase).
-# 2. Then add speaker information as relevant. This will vary depending on your
-
-# %%
-from collections import Counter
-from itertools import groupby
-
-
-def extract_transcript_info(transcript_rows):
-    """
-    Extract a summary of the extracted transcript rows for each transcript.
-
-    """
-
-    by_transcript = groupby(transcript_rows, key=lambda x: x[0])
-
-    for transcript, rows in by_transcript:
-        all_rows = list(rows)
-        print(transcript, all_rows)
-
-
-def extract_segment_info(transcript_rows):
-    """
-    Extract a summary of the extracted segments for each transcript.
-
-    """
-    by_segment = groupby(transcript_rows, key=lambda x: (x[0], x[-1]))
-
-    for segment, rows in by_segment:
-        all_rows = list(rows)
-        print(segment, all_rows)
-
-
-def extract_speaker_code_info(transcript_rows):
-    """
-    Extract a summary of the extracted speaker codes for each transcript.
-
-    """
-    key = lambda x: (x[0], x[2])
-    by_speaker = groupby(sorted(transcript_rows, key=key), key=key)
-
-    for speaker, rows in by_speaker:
-        all_rows = list(rows)
-        print(speaker, all_rows)
-
-
-extract_transcript_info(transcript_rows)
-extract_segment_info(transcript_rows)
-extract_speaker_code_info(transcript_rows)
-
-
-for filename, para_no, speaker_code, text, segment_no in transcript_rows:
-    pass
-
-# %% Write the output file
-
-
-# %% [markdown]
-# # Pre-process conversations
-#
-# This step will aim to extract each turn of each uploaded conversation, and separate
-# the speaker from the turn content. This step will only be as consistent as your
-# transcripts are.
-#
-# This will completely delete and recreate the state of processed conversations - if
-# you want to upload new or edited files, make the contents of the conversations folder
-# match what you want, and re-run this cell.
 
 # %%
