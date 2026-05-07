@@ -258,7 +258,7 @@ class TidyTranscripts(RowWithExtraFields):
         transcripts = {}
 
         for uploaded in doc_widget.value:
-            transcripts[uploaded.name] = Document(uploaded.content)
+            transcripts[uploaded.name] = Document(BytesIO(uploaded.content))
 
         spreadsheet_bytes = None
 

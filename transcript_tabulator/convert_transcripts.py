@@ -121,6 +121,8 @@ display(layout)
 from processor import TidyTranscripts
 
 transcripts = TidyTranscripts.from_ipywidgets(doc_widget, xl_widget)
+transcripts.as_xlsx()
+
 
 # %% [markdown]
 # # 3. Download and Review the Created File
