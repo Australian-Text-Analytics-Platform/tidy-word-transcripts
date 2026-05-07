@@ -103,6 +103,11 @@ class RowWithExtraFields:
             *(self.extra_fields[f] for f in self.extra_field_names),
         ]
 
+    def merge_extras(self, from_instance):
+
+        self.extra_fields = from_instance.extra_fields
+        self.__post_init__()
+
 
 @dc.dataclass
 class Segment(RowWithExtraFields):
@@ -114,6 +119,9 @@ class Segment(RowWithExtraFields):
         default_factory=dict
     )
 
+    def as_key(self):
+        return (self.source_file, self.segment_no)
+
 
 @dc.dataclass
 class SpeakerCode(RowWithExtraFields):
@@ -124,6 +132,9 @@ class SpeakerCode(RowWithExtraFields):
         default_factory=dict
     )
 
+    def as_key(self):
+        return (self.source_file, self.speaker_code)
+
 
 @dc.dataclass
 class Transcript(RowWithExtraFields):
@@ -132,6 +143,9 @@ class Transcript(RowWithExtraFields):
     extra_fields: typing.Optional[dict[str, typing.Any]] = dc.field(
         default_factory=dict
     )
+
+    def as_key(self):
+        return (self.source_file,)
 
 
 @dc.dataclass
@@ -247,6 +261,7 @@ class TidyTranscripts(RowWithExtraFields):
             transcripts[uploaded.name] = Document(uploaded.content)
 
         spreadsheet_bytes = None
+
         if spreadsheet_widget.value:
             spreadsheet_bytes = spreadsheet_widget.value[0].content.to_bytes()
 
@@ -256,7 +271,7 @@ class TidyTranscripts(RowWithExtraFields):
             split_speaker_on=split_speaker_on,
         )
 
-    def extract_from_spreadsheet(self):
+    def extract_from_existing_spreadsheet(self):
 
         if self.spreadsheet_bytes:
             wb = load_workbook(filename=BytesIO(self.spreadsheet_bytes))
@@ -269,7 +284,8 @@ class TidyTranscripts(RowWithExtraFields):
 
         sheet_map = [
             # This is sheetname, primary key columns, the mapped datatype, and the place
-            # to put results.
+            # to put results. Only extra_fields are preserved: the other column is the
+            # turn count which needs to be regenerated.
             (
                 "speaker_code",
                 ("source_file", "speaker_code"),
@@ -288,7 +304,32 @@ class TidyTranscripts(RowWithExtraFields):
                 rows = ws.iter_rows()
 
                 header_row = next(rows)
-                print(header_row)
+
+                header = [cell.value for cell in header_row]
+
+                if not all(column in header for column in key_columns):
+                    raise ValueError(
+                        f"{sheetname} needs key columns {key_columns} to be mergable"
+                    )
+
+                for row in rows:
+                    values = {h: cell.value for h, cell in zip(header, row)}
+                    # Always update turn count
+                    values.pop("turn_count", None)
+
+                    key = tuple(values[key] for key in key_columns)
+                    extra_fields = {
+                        key: value
+                        for key, value in values.items()
+                        if key not in key_columns
+                    }
+
+                    if key in data_loc:
+                        raise ValueError(
+                            f"Repeating key for {sheetname} with value {key}"
+                        )
+
+                    data_loc[key] = sheet_type(*key, extra_fields=extra_fields)
 
         return segments, speaker_codes, transcript_stats
 
@@ -301,6 +342,13 @@ class TidyTranscripts(RowWithExtraFields):
         sheets together.
 
         """
+
+        # Extract existing information in spreadsheet for merging
+        (
+            existing_segments,
+            existing_speaker_codes,
+            existing_transcript_stats,
+        ) = self.extract_from_existing_spreadsheet()
 
         if self.spreadsheet_bytes:
             wb = load_workbook(filename=BytesIO(self.spreadsheet_bytes))
@@ -320,23 +368,39 @@ class TidyTranscripts(RowWithExtraFields):
         for turn in self.turns:
             turn_sheet.append(dc.astuple(turn))
 
-        speaker_sheet = wb.create_sheet("speaker_code")
-        speaker_sheet.append(self.speaker_codes[0].as_header_row())
+        config = [
+            ("speaker_code", self.speaker_codes, existing_speaker_codes),
+            ("segment", self.segments, existing_segments),
+            ("transcript_file", self.transcript_stats, existing_transcript_stats),
+        ]
+        for sheet_name, rows, extra_data in config:
 
-        for speaker_code in self.speaker_codes:
-            speaker_sheet.append(speaker_code.as_row())
+            if sheet_name in wb.sheetnames:
+                wb.remove(wb[sheet_name])
 
-        segment_sheet = wb.create_sheet("segment")
-        segment_sheet.append(self.segments[0].as_header_row())
+            sheet = wb.create_sheet(sheet_name)
 
-        for segment in self.segments:
-            segment_sheet.append(segment.as_row())
+            # Intercept if there are any extra fields...
+            # Again, this only works if the extra rows are consistent.
+            temp_row = rows[0]
+            if extra_data:
+                temp_row = next(iter(extra_data.values()))
 
-        transcript_sheet = wb.create_sheet("transcript_file")
-        transcript_sheet.append(self.transcript_stats[0].as_header_row())
+            sheet.append(temp_row.as_header_row())
 
-        for t_stat in self.transcript_stats:
-            transcript_sheet.append(t_stat.as_row())
+            for row in rows:
+
+                key = row.as_key()
+
+                if key in extra_data:
+                    row.merge_extras(extra_data[key])
+                    del extra_data[key]
+
+                sheet.append(row.as_row())
+
+            # Write any existing rows that might not have been matched to anything.
+            for extra_row in extra_data.values():
+                sheet.append(row.as_row())
 
         return wb
 
@@ -348,6 +412,6 @@ if __name__ == "__main__":
         spreadsheet_path="../examples/output.xlsx",
     )
 
-    tidied.extract_from_spreadsheet()
+    print(tidied.extract_from_existing_spreadsheet())
     wb = tidied.as_xlsx()
     wb.save("output.xlsx")
