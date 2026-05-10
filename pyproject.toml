@@ -24,7 +24,7 @@ version="0.0.1dev1"
 
 
 [project.optional-dependencies]
-dev = ["pip-tools", "nbstripout", "black"]
+dev = ["pip-tools", "nbstripout", "black", "jupyter"]
 
 [project.urls]
 Repository = "https://github.com/AustralianTextAnalyticsPlatform/transcript-tabulator"

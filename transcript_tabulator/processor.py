@@ -8,6 +8,7 @@ import re
 import typing
 from collections import Counter
 from io import BytesIO
+from zipfile import ZipFile
 
 from openpyxl import Workbook, load_workbook
 
@@ -230,40 +231,22 @@ class TidyTranscripts(RowWithExtraFields):
         )
 
     @classmethod
-    def from_zip(cls, zip_reader, split_speaker_on=":\t"):
+    def from_zip(cls, doc_zip_path, spreadsheet_path=None, split_speaker_on=":\t"):
         """Load transcripts from a given zip container."""
-
-        # transcripts = {}
-
-        # for path in transcript_paths:
-        #     with open(path, "rb") as transcript:
-        #         transcripts[path] = Document(transcript)
-
-        # spreadsheet_bytes = None
-
-        # if spreadsheet_path:
-        #     with open(spreadsheet_path, "rb") as f:
-        #         spreadsheet_bytes = f.read()
-
-        return cls(
-            transcripts=transcripts,
-            spreadsheet_bytes=spreadsheet_bytes,
-            split_speaker_on=split_speaker_on,
-        )
-
-    @classmethod
-    def from_ipywidgets(cls, doc_widget, spreadsheet_widget, split_speaker_on=":\t"):
-        """Tidy transcripts from the upload widgets"""
 
         transcripts = {}
 
-        for uploaded in doc_widget.value:
-            transcripts[uploaded.name] = Document(BytesIO(uploaded.content))
+        with ZipFile(doc_zip_path) as zipf:
+            for zippath in zipf.names:
+                if zippath.endswith(".docx"):
+                    with zipf.open(zippath, "rb") as f:
+                        transcripts[zippath] = Document(f.read())
 
         spreadsheet_bytes = None
 
-        if spreadsheet_widget.value:
-            spreadsheet_bytes = spreadsheet_widget.value[0].content.to_bytes()
+        if spreadsheet_path:
+            with open(spreadsheet_path, "rb") as f:
+                spreadsheet_bytes = f.read()
 
         return cls(
             transcripts=transcripts,
