@@ -19,13 +19,12 @@ classifiers=[
 dependencies = [
   "python-docx",
   "openpyxl",
-  "jupytext",
 ]
 version="0.0.1dev1"
 
 
 [project.optional-dependencies]
-dev = ["pip-tools", "jupytext", "black"]
+dev = ["pip-tools", "nbstripout", "black"]
 
 [project.urls]
 Repository = "https://github.com/AustralianTextAnalyticsPlatform/transcript-tabulator"
