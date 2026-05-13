@@ -237,10 +237,10 @@ class TidyTranscripts(RowWithExtraFields):
         transcripts = {}
 
         with ZipFile(doc_zip_path) as zipf:
-            for zippath in zipf.names:
+            for zippath in zipf.namelist():
                 if zippath.endswith(".docx"):
-                    with zipf.open(zippath, "rb") as f:
-                        transcripts[zippath] = Document(f.read())
+                    with zipf.open(zippath, "r") as f:
+                        transcripts[zippath] = Document(f)
 
         spreadsheet_bytes = None
 

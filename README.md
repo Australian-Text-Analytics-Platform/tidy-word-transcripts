@@ -1,16 +1,6 @@
 # Tidy Word Transcripts
 
 
-
-
-
-
-
-
-
-
-
-
 ## Dev Notes
 
 Keeping the notebook clear of outputs with nbstripout:
