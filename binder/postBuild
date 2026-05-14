@@ -1,0 +1,3 @@
+#!/bin/bash
+
+mv jupyter_lab_config.py /home/joyvan/.jupyter/
