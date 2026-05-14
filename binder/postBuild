@@ -1,4 +1,0 @@
-#!/bin/bash
-
-mkdir -p /home/joyvan/.jupyter/
-cp jupyter_lab_config.py /home/joyvan/.jupyter/
